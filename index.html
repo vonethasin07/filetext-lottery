@@ -9,7 +9,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts for Lao & English -->
+    <!-- Google Fonts for Lao & Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -46,11 +46,6 @@
             color: #ffffff;
         }
 
-        .excel-header-orange {
-            background-color: #f7941d;
-            color: #ffffff;
-        }
-
         .excel-header-peach {
             background-color: #fde9d9;
             color: #000000;
@@ -77,6 +72,17 @@
 
         .sortable-header:hover {
             filter: brightness(0.92);
+        }
+
+        .clickable-cell {
+            cursor: pointer;
+            transition: all 0.15s ease-in-out;
+        }
+
+        .clickable-cell:hover {
+            background-color: #e0f2fe !important;
+            transform: scale(1.02);
+            box-shadow: inset 0 0 0 2px #0284c7;
         }
     </style>
 </head>
@@ -108,46 +114,159 @@
         </div>
     </div>
 
-    <header class="bg-blue-900 text-white shadow-lg sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-4">
-            <div class="flex items-center space-x-3 rtl:space-x-reverse">
-                <div class="bg-emerald-500 text-white p-2.5 rounded-xl shadow-md">
-                    <i class="fa-solid fa-file-excel text-2xl"></i>
+    <!-- Details Modal (Popup for Buying Breakdown) -->
+    <div id="detailsModal"
+        class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[90] flex items-center justify-center hidden p-4 transition-all duration-200">
+        <div
+            class="bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+            <!-- Modal Header -->
+            <div class="bg-blue-900 text-white px-6 py-4 flex items-center justify-between shadow-md">
+                <div class="flex items-center gap-3">
+                    <div
+                        class="w-10 h-10 bg-blue-800 rounded-xl flex items-center justify-center text-blue-200 text-lg">
+                        <i class="fa-solid fa-list-ol"></i>
+                    </div>
+                    <div>
+                        <h3 id="modalTitle" class="text-lg font-bold">ລາຍລະອຽດການຊື້ເລກ</h3>
+                        <p id="modalSubtitle" class="text-xs text-blue-200">ລະຫັດຜູ້ຂາຍ: -</p>
+                    </div>
                 </div>
-                <div>
-                    <h1 class="text-xl font-bold tracking-wide">ລະບົບແຍກໄຟລ໌ Text </h1>
-                    <p class="text-xs text-blue-200">ນັບບິນຕາມຈຳນວນບິນ 
-                        ຂອງແຕ່ລະລະຫັດ</p>
+                <button onclick="closeDetailsModal()"
+                    class="w-8 h-8 rounded-lg bg-blue-800 hover:bg-red-600 text-white flex items-center justify-center transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Modal Summary KPI & Controls -->
+            <div class="bg-slate-50 p-4 border-b border-slate-200 grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div class="bg-white p-3 rounded-xl border border-slate-200 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium">ຈຳນວນເລກ Unique</p>
+                        <h4 id="modalUniqueCount" class="text-lg font-bold text-blue-700">0</h4>
+                    </div>
+                    <i class="fa-solid fa-hashtag text-blue-300 text-xl"></i>
+                </div>
+                <div class="bg-white p-3 rounded-xl border border-slate-200 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium">ຈຳນວນຄັ້ງຊື້ລວມ</p>
+                        <h4 id="modalTotalTimes" class="text-lg font-bold text-emerald-700">0 ຄັ້ງ</h4>
+                    </div>
+                    <i class="fa-solid fa-rotate text-emerald-300 text-xl"></i>
+                </div>
+                <div class="bg-white p-3 rounded-xl border border-slate-200 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium">ຍອດເງິນລວມ</p>
+                        <h4 id="modalTotalAmount" class="text-lg font-bold text-purple-700">0 ₭</h4>
+                    </div>
+                    <i class="fa-solid fa-money-bill-wave text-purple-300 text-xl"></i>
                 </div>
             </div>
 
-            <!-- <div class="flex items-center space-x-2">
-                <button onclick="loadSampleData()"
-                    class="px-3.5 py-2 bg-blue-700 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition shadow flex items-center gap-2">
-                    <i class="fa-solid fa-vial"></i>
-                    <span>ໂຫຼດຂໍ້ມູນຕົວຢ່າງ</span>
+            <!-- Modal Search & Sort Toolbar -->
+            <div
+                class="p-4 bg-white border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 text-xs">
+                <div class="relative flex-1 min-w-[200px]">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" id="modalSearchInput" oninput="filterModalDetails()"
+                        placeholder="ຄົ້ນຫາຕົວເລກ (ເຊັ່ນ: 58, 11)..."
+                        class="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <span class="font-semibold text-slate-600">ຈັດລຽງ:</span>
+                    <select id="modalSortSelect" onchange="filterModalDetails()"
+                        class="bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500 font-medium text-slate-700">
+                        <option value="numAsc">ຕາມຕົວເລກ (00 → 99)</option>
+                        <option value="amountDesc">ຍອດເງິນ (ຫຼາຍ → ໜ້ອຍ)</option>
+                        <option value="countDesc">ຈຳນວນຄັ້ງຊື້ (ຫຼາຍ → ໜ້ອຍ)</option>
+                    </select>
+
+                    <div class="border-l border-slate-300 h-5 mx-1"></div>
+
+                    <button onclick="setModalViewMode('table')" id="btnViewTable"
+                        class="px-2.5 py-1.5 bg-blue-600 text-white rounded-lg font-medium transition flex items-center gap-1 shadow-sm">
+                        <i class="fa-solid fa-table-list"></i>
+                        <span>ຕາຕະລາງ</span>
+                    </button>
+                    <button onclick="setModalViewMode('grid')" id="btnViewGrid"
+                        class="px-2.5 py-1.5 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded-lg font-medium transition flex items-center gap-1">
+                        <i class="fa-solid fa-grip"></i>
+                        <span>ກ່ອງເລກ</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Modal Content Area (Scrollable) -->
+            <div class="p-6 overflow-y-auto flex-grow bg-slate-50/50 min-h-[250px]">
+                <div id="modalTableView">
+                    <table
+                        class="w-full text-sm border-collapse bg-white rounded-xl overflow-hidden shadow-sm border border-slate-200">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-700 text-xs uppercase border-b border-slate-200">
+                                <th class="py-2.5 px-4 text-center">ລຳດັບ</th>
+                                <th class="py-2.5 px-4 text-center">ຕົວເລກ</th>
+                                <th class="py-2.5 px-4 text-center">ຈຳນວນຄັ້ງຊື້</th>
+                                <th class="py-2.5 px-4 text-right">ຍອດເງິນລວມ (₭)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modalTableBody" class="divide-y divide-slate-100">
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="modalGridView" class="hidden grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                </div>
+
+                <div id="modalEmptyState" class="hidden text-center py-10 space-y-2">
+                    <i class="fa-solid fa-folder-open text-slate-300 text-4xl"></i>
+                    <p class="text-sm font-semibold text-slate-500">ບໍ່ພົບຂໍ້ມູນຕົວເລກ</p>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div
+                class="bg-slate-100 px-6 py-3 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
+                <span>* ຄລິກໃສ່ຊ່ອງຕາຕະລາງເພື່ອກວດເບິ່ງລາຍລະອຽດໄດ້ທຸກເວລາ</span>
+                <button onclick="closeDetailsModal()"
+                    class="px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white rounded-lg font-medium transition">
+                    ປິດໜ້າຕ່າງ
                 </button>
-            </div> -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="bg-blue-900 text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3.5 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center space-x-3 rtl:space-x-reverse">
+                <div class="bg-emerald-500 text-white p-2.5 rounded-xl shadow-md">
+                    <i class="fa-solid fa-calculator text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-wide">ລະບົບແຍກໄຟລ໌ Text & ສັງລວມເລກເກັງ</h1>
+                    <p class="text-xs text-blue-200">ນັບຈຳນວນບິນ ແລະ ສັງລວມເລກ Unique ແຍກຕາມລະຫັດຜູ້ຂາຍ</p>
+                </div>
+            </div>
         </div>
     </header>
 
     <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full space-y-6">
 
-        <!-- Drag & Drop File Upload -->
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+        <!-- File Upload Area -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
             <div id="dropZone"
-                class="border-2 border-dashed border-blue-300 hover:border-blue-500 rounded-xl p-8 text-center bg-blue-50/50 hover:bg-blue-50 transition cursor-pointer relative group">
+                class="border-2 border-dashed border-blue-300 hover:border-blue-500 rounded-xl p-6 text-center bg-blue-50/40 hover:bg-blue-50 transition cursor-pointer relative group">
                 <input type="file" id="fileInput" accept=".txt,.csv" class="hidden" multiple
                     onchange="handleFileSelect(event)">
-                <div class="flex flex-col items-center justify-center space-y-3">
+                <div class="flex flex-col items-center justify-center space-y-2">
                     <div
-                        class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-2xl group-hover:scale-110 transition duration-200">
+                        class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xl group-hover:scale-110 transition duration-200">
                         <i class="fa-solid fa-cloud-arrow-up"></i>
                     </div>
                     <div>
-                        <p class="text-base font-semibold text-slate-700">ລາກໄຟລ໌ Text ມາໃສ່ທີ່ນີ້ ຫຼື <span
+                        <p class="text-sm font-semibold text-slate-700">ລາກໄຟລ໌ Text ມາໃສ່ທີ່ນີ້ ຫຼື <span
                                 class="text-blue-600 underline">ຄລິກເພື່ອເລືອກໄຟລ໌</span></p>
-                        <p class="text-xs text-slate-500 mt-1">ຮອງຮັບໄຟລ໌ `.txt` ຫຼື `.csv` </p>
+                        <p class="text-xs text-slate-500 mt-0.5">ຮອງຮັບໄຟລ໌ `.txt` ຫຼື `.csv` (ແຍກດ້ວຍ `;` ຫຼື `,`)</p>
                     </div>
                     <span id="fileNameDisplay"
                         class="text-xs font-semibold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200 hidden"></span>
@@ -200,18 +319,21 @@
             </div>
         </div>
 
-        <!-- Main Summary Section -->
+        <!-- Main Summary Table Section -->
         <div id="contentSection" class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hidden">
             <div
                 class="border-b border-slate-200 bg-slate-50/80 px-6 py-4 flex flex-wrap items-center justify-between gap-4">
-                <h3 class="font-bold text-slate-700 flex items-center gap-2 text-base">
-                    <i class="fa-solid fa-table text-blue-600"></i>
-                    <span>ຕາຕະລາງສັງລວມ (ນັບຕົວເລກແບບ Unique)</span>
-                </h3>
+                <div>
+                    <h3 class="font-bold text-slate-700 flex items-center gap-2 text-base">
+                        <i class="fa-solid fa-table text-blue-600"></i>
+                        <span>ຕາຕະລາງສັງລວມ (ນັບຕົວເລກແບບ Unique)</span>
+                    </h3>
+                    <p class="text-xs text-slate-500 mt-0.5"> ຄລິກໃສ່ຕົວເລກໃນຕາຕະລາງ (ເຊັ່ນ 100 ເຕັມ)
+                        ເພື່ອເບິ່ງລາຍລະອຽດການຊື້ ແລະ ຍອດເງິນ</p>
+                </div>
 
                 <!-- Controls & Sorting Toolbar -->
                 <div class="flex flex-wrap items-center gap-3">
-                    <!-- Filter / Sort Selection Bar -->
                     <div
                         class="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-slate-300 shadow-sm text-xs">
                         <i class="fa-solid fa-filter text-blue-600"></i>
@@ -256,13 +378,12 @@
                                 ນັບຈຳນວນເລກແຕ່ລະລະຫັດ
                             </th>
                             <th colspan="5" class="excel-header-subblue font-bold text-center border-b">
-                                ປະເພດເລກ
+                                ປະເພດເລກ (ນັບຕົວເລກບໍ່ຊ້ຳກັນ)
                             </th>
                         </tr>
                         <tr class="text-xs uppercase font-bold">
                             <th class="excel-header-blue w-44 text-center">ລະຫັດຜູ້ຂາຍ</th>
 
-                            <!-- Sortable Column Headers -->
                             <th onclick="toggleSort('billCount')"
                                 class="excel-header-green w-28 text-center sortable-header"
                                 title="ຄລິກເພື່ອຈັດລຽງ ຈຳນວນບິນ">
@@ -332,6 +453,9 @@
     <script>
         let rawTextContent = '';
         let summaryData = [];
+        let activeSellerDetails = null;
+        let activeDigitLen = 2;
+        let modalViewMode = 'table'; // 'table' or 'grid'
 
         function showLoading() {
             const modal = document.getElementById('loadingModal');
@@ -361,9 +485,11 @@
         // Full quota thresholds
         const FULL_LIMITS = { 2: 100, 3: 1000, 4: 10000, 5: 100000, 6: 1000000 };
 
-        // Test sample matching user requirement exactly
+        // Test sample
         const sampleText = `1;2614574589580851001;26146849569617;21070192530;26146;11;50000
-2;2614574589580851002;26146849569617;21070192530;26146;11;50000`;
+2;2614574589580851002;26146849569617;21070192530;26146;11;50000
+3;2614574589580851003;26146849569617;21070192531;26146;811;20000
+4;2614574589580851004;26146849569617;21070192532;26146;2811;10000`;
 
         document.addEventListener('DOMContentLoaded', () => {
             const dropZone = document.getElementById('dropZone');
@@ -458,7 +584,6 @@
 
                 function processBatch() {
                     const startTime = performance.now();
-                    // Process dynamically for up to 30ms per frame to maximize speed while maintaining smooth UI
                     while (currentIndex < totalLines && (performance.now() - startTime) < 30) {
                         const line = lines[currentIndex++];
                         if (!line) continue;
@@ -475,11 +600,11 @@
                                 s = sellersMap[seller] = {
                                     seller: seller,
                                     billsSet: new Set(),
-                                    d2Set: new Set(),
-                                    d3Set: new Set(),
-                                    d4Set: new Set(),
-                                    d5Set: new Set(),
-                                    d6Set: new Set(),
+                                    d2Map: {}, // numStr -> { num, count, amount }
+                                    d3Map: {},
+                                    d4Map: {},
+                                    d5Map: {},
+                                    d6Map: {},
                                     d2Total: 0,
                                     d3Total: 0,
                                     d4Total: 0,
@@ -493,11 +618,20 @@
                             s.totalAmount += amount;
 
                             const len = numStr.length;
-                            if (len === 2) { s.d2Set.add(numStr); s.d2Total++; }
-                            else if (len === 3) { s.d3Set.add(numStr); s.d3Total++; }
-                            else if (len === 4) { s.d4Set.add(numStr); s.d4Total++; }
-                            else if (len === 5) { s.d5Set.add(numStr); s.d5Total++; }
-                            else if (len === 6) { s.d6Set.add(numStr); s.d6Total++; }
+                            let targetMap = null;
+                            if (len === 2) { targetMap = s.d2Map; s.d2Total++; }
+                            else if (len === 3) { targetMap = s.d3Map; s.d3Total++; }
+                            else if (len === 4) { targetMap = s.d4Map; s.d4Total++; }
+                            else if (len === 5) { targetMap = s.d5Map; s.d5Total++; }
+                            else if (len === 6) { targetMap = s.d6Map; s.d6Total++; }
+
+                            if (targetMap && numStr) {
+                                if (!targetMap[numStr]) {
+                                    targetMap[numStr] = { num: numStr, count: 0, amount: 0 };
+                                }
+                                targetMap[numStr].count++;
+                                targetMap[numStr].amount += amount;
+                            }
                         }
                     }
 
@@ -520,11 +654,11 @@
 
             requestAnimationFrame(() => {
                 summaryData = Object.values(sellersMap).map(s => {
-                    const d2Count = s.d2Set.size;
-                    const d3Count = s.d3Set.size;
-                    const d4Count = s.d4Set.size;
-                    const d5Count = s.d5Set.size;
-                    const d6Count = s.d6Set.size;
+                    const d2Count = Object.keys(s.d2Map).length;
+                    const d3Count = Object.keys(s.d3Map).length;
+                    const d4Count = Object.keys(s.d4Map).length;
+                    const d5Count = Object.keys(s.d5Map).length;
+                    const d6Count = Object.keys(s.d6Map).length;
 
                     return {
                         seller: s.seller,
@@ -534,6 +668,11 @@
                         digit4: d4Count,
                         digit5: d5Count,
                         digit6: d6Count,
+                        d2Map: s.d2Map,
+                        d3Map: s.d3Map,
+                        d4Map: s.d4Map,
+                        d5Map: s.d5Map,
+                        d6Map: s.d6Map,
                         digit2Total: s.d2Total,
                         digit3Total: s.d3Total,
                         digit4Total: s.d4Total,
@@ -559,18 +698,18 @@
             });
         }
 
+        // Sorting Logic
         function toggleSort(key) {
             if (currentSortKey === key) {
                 if (currentSortDir === 'asc') {
-                    currentSortDir = 'desc'; //ໜ້ອຍຫາຫຼາຍ -> ຫຼາຍຫາໜ້ອຍ
+                    currentSortDir = 'desc';
                 } else {
-                    // Reset sort to default
                     currentSortKey = null;
                     currentSortDir = 'asc';
                 }
             } else {
                 currentSortKey = key;
-                currentSortDir = 'asc'; // Default to ໜ້ອຍຫາຫຼາຍ when clicked
+                currentSortDir = 'asc';
             }
 
             syncSortControls();
@@ -612,9 +751,9 @@
                 const valA = a[currentSortKey] || 0;
                 const valB = b[currentSortKey] || 0;
                 if (currentSortDir === 'asc') {
-                    return valA - valB; // ໜ້ອຍຫາຫຼາຍ
+                    return valA - valB;
                 } else {
-                    return valB - valA; // ຫຼາຍຫາໜ້ອຍ
+                    return valB - valA;
                 }
             });
         }
@@ -634,10 +773,10 @@
 
                 if (currentSortKey === k) {
                     if (currentSortDir === 'asc') {
-                        icon.className = 'fa-solid fa-arrow-down-short-wide text-blue-600 font-bold text-xs scale-110'; // ໜ້ອຍຫາຫຼາຍ
+                        icon.className = 'fa-solid fa-arrow-down-short-wide text-blue-600 font-bold text-xs scale-110';
                         icon.title = "ກຳລັງຈັດລຽງ: ໜ້ອຍຫາຫຼາຍ";
                     } else {
-                        icon.className = 'fa-solid fa-arrow-up-wide-short text-blue-600 font-bold text-xs scale-110'; // ຫຼາຍຫາໜ້ອຍ
+                        icon.className = 'fa-solid fa-arrow-up-wide-short text-blue-600 font-bold text-xs scale-110';
                         icon.title = "ກຳລັງຈັດລຽງ: ຫຼາຍຫາໜ້ອຍ";
                     }
                 } else {
@@ -666,21 +805,31 @@
                 const tr = document.createElement('tr');
                 tr.className = idx % 2 === 0 ? 'bg-white hover:bg-slate-50' : 'bg-slate-50/50 hover:bg-slate-100/60';
 
-                const formatCell = (val, isFull) => {
+                const formatCell = (val, isFull, digitLen) => {
+                    let content = '';
                     if (isFull) {
-                        return `<div class="flex flex-col items-center justify-center"><span class="font-bold text-red-600">${val.toLocaleString()}</span><span class="badge-full"><i class="fa-solid fa-fire"></i>ເຕັມ</span></div>`;
+                        content = `<div class="flex flex-col items-center justify-center"><span class="font-bold text-red-600">${val.toLocaleString()}</span><span class="badge-full"><i class="fa-solid fa-fire"></i>ເຕັມ</span></div>`;
+                    } else if (val > 0) {
+                        content = `<span class="font-bold text-slate-800">${val.toLocaleString()}</span>`;
+                    } else {
+                        content = `<span class="text-slate-300">-</span>`;
                     }
-                    return val > 0 ? `<span class="font-bold text-slate-800">${val.toLocaleString()}</span>` : '';
+
+                    if (val > 0) {
+                        return `<td class="border text-center clickable-cell ${isFull ? 'bg-red-50/60' : ''}" onclick="openDetailsModal('${row.seller}', ${digitLen})" title="ຄລິກເພື່ອເບິ່ງລາຍລະອຽດການຊື້ເລກ ${digitLen} ໂຕ">${content}</td>`;
+                    } else {
+                        return `<td class="border text-center text-slate-300 font-light">${content}</td>`;
+                    }
                 };
 
                 tr.innerHTML = `
                     <td class="font-mono font-semibold text-blue-900 border text-center">${row.seller}</td>
                     <td class="font-semibold text-emerald-700 border text-center">${row.billCount.toLocaleString()}</td>
-                    <td class="border text-center ${row.isFullD2 ? 'bg-red-50' : ''}">${formatCell(row.digit2, row.isFullD2)}</td>
-                    <td class="border text-center ${row.isFullD3 ? 'bg-red-50' : ''}">${formatCell(row.digit3, row.isFullD3)}</td>
-                    <td class="border text-center ${row.isFullD4 ? 'bg-red-50' : ''}">${formatCell(row.digit4, row.isFullD4)}</td>
-                    <td class="border text-center ${row.isFullD5 ? 'bg-red-50' : ''}">${formatCell(row.digit5, row.isFullD5)}</td>
-                    <td class="border text-center ${row.isFullD6 ? 'bg-red-50' : ''}">${formatCell(row.digit6, row.isFullD6)}</td>
+                    ${formatCell(row.digit2, row.isFullD2, 2)}
+                    ${formatCell(row.digit3, row.isFullD3, 3)}
+                    ${formatCell(row.digit4, row.isFullD4, 4)}
+                    ${formatCell(row.digit5, row.isFullD5, 5)}
+                    ${formatCell(row.digit6, row.isFullD6, 6)}
                 `;
                 tbody.appendChild(tr);
             });
@@ -696,6 +845,123 @@
                     <td class="border text-center font-bold">${sumD6.toLocaleString()}</td>
                 </tr>
             `;
+        }
+
+        // Details Modal Functions
+        function openDetailsModal(sellerCode, digitLen) {
+            const sellerObj = summaryData.find(s => s.seller === sellerCode);
+            if (!sellerObj) return;
+
+            activeSellerDetails = sellerObj;
+            activeDigitLen = digitLen;
+
+            document.getElementById('modalTitle').textContent = `ລາຍລະອຽດການຊື້ເລກ ${digitLen} ໂຕ`;
+            document.getElementById('modalSubtitle').textContent = `ລະຫັດຜູ້ຂາຍ: ${sellerCode}`;
+            document.getElementById('modalSearchInput').value = '';
+
+            filterModalDetails();
+
+            document.getElementById('detailsModal').classList.remove('hidden');
+        }
+
+        function closeDetailsModal() {
+            document.getElementById('detailsModal').classList.add('hidden');
+        }
+
+        function setModalViewMode(mode) {
+            modalViewMode = mode;
+            const btnTable = document.getElementById('btnViewTable');
+            const btnGrid = document.getElementById('btnViewGrid');
+
+            if (mode === 'table') {
+                btnTable.className = 'px-2.5 py-1.5 bg-blue-600 text-white rounded-lg font-medium transition flex items-center gap-1 shadow-sm';
+                btnGrid.className = 'px-2.5 py-1.5 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded-lg font-medium transition flex items-center gap-1';
+                document.getElementById('modalTableView').classList.remove('hidden');
+                document.getElementById('modalGridView').classList.add('hidden');
+            } else {
+                btnGrid.className = 'px-2.5 py-1.5 bg-blue-600 text-white rounded-lg font-medium transition flex items-center gap-1 shadow-sm';
+                btnTable.className = 'px-2.5 py-1.5 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded-lg font-medium transition flex items-center gap-1';
+                document.getElementById('modalGridView').classList.remove('hidden');
+                document.getElementById('modalTableView').classList.add('hidden');
+            }
+        }
+
+        function filterModalDetails() {
+            if (!activeSellerDetails) return;
+
+            const mapKey = `d${activeDigitLen}Map`;
+            const numMap = activeSellerDetails[mapKey] || {};
+            const items = Object.values(numMap);
+
+            const searchKey = document.getElementById('modalSearchInput').value.trim();
+            const sortKey = document.getElementById('modalSortSelect').value;
+
+            let filtered = items.filter(item => item.num.includes(searchKey));
+
+            // Sorting
+            if (sortKey === 'numAsc') {
+                filtered.sort((a, b) => a.num.localeCompare(b.num));
+            } else if (sortKey === 'amountDesc') {
+                filtered.sort((a, b) => b.amount - a.amount);
+            } else if (sortKey === 'countDesc') {
+                filtered.sort((a, b) => b.count - a.count);
+            }
+
+            // KPIs inside Modal
+            const totalUnique = filtered.length;
+            const totalTimes = filtered.reduce((acc, i) => acc + i.count, 0);
+            const totalAmount = filtered.reduce((acc, i) => acc + i.amount, 0);
+
+            document.getElementById('modalUniqueCount').textContent = totalUnique.toLocaleString();
+            document.getElementById('modalTotalTimes').textContent = `${totalTimes.toLocaleString()} ຄັ້ງ`;
+            document.getElementById('modalTotalAmount').textContent = `${totalAmount.toLocaleString()} ₭`;
+
+            const tbody = document.getElementById('modalTableBody');
+            const gridView = document.getElementById('modalGridView');
+            const emptyState = document.getElementById('modalEmptyState');
+
+            tbody.innerHTML = '';
+            gridView.innerHTML = '';
+
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            // Render Table View
+            filtered.forEach((item, idx) => {
+                const tr = document.createElement('tr');
+                tr.className = idx % 2 === 0 ? 'bg-white hover:bg-blue-50/50' : 'bg-slate-50 hover:bg-blue-50/50';
+
+                tr.innerHTML = `
+                    <td class="py-2.5 px-4 text-center text-slate-400 text-xs font-mono">${idx + 1}</td>
+                    <td class="py-2.5 px-4 text-center font-mono font-bold text-lg text-blue-900">${item.num}</td>
+                    <td class="py-2.5 px-4 text-center font-semibold text-emerald-700">
+                        <span class="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-md border border-emerald-200">${item.count.toLocaleString()} ຄັ້ງ</span>
+                    </td>
+                    <td class="py-2.5 px-4 text-right font-bold text-purple-700">${item.amount.toLocaleString()} ₭</td>
+                `;
+                tbody.appendChild(tr);
+
+                // Render Grid View
+                const card = document.createElement('div');
+                card.className = 'bg-white border border-slate-200 rounded-xl p-3 shadow-sm hover:border-blue-400 transition flex flex-col justify-between space-y-2';
+                card.innerHTML = `
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                        <span class="text-xs text-slate-400 font-mono">#${idx + 1}</span>
+                        <span class="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">${item.count} ຄັ້ງ</span>
+                    </div>
+                    <div class="text-center py-1">
+                        <span class="text-2xl font-black font-mono tracking-wider text-blue-900">${item.num}</span>
+                    </div>
+                    <div class="text-center pt-1 border-t border-slate-100">
+                        <span class="text-xs font-bold text-purple-700">${item.amount.toLocaleString()} ₭</span>
+                    </div>
+                `;
+                gridView.appendChild(card);
+            });
         }
 
         function updateKPIs() {
@@ -715,7 +981,6 @@
 
             const displayData = getSortedData();
 
-            // Border styling
             const thinBorder = {
                 top: { style: "thin", color: { rgb: "CBD5E1" } },
                 bottom: { style: "thin", color: { rgb: "CBD5E1" } },
@@ -723,7 +988,6 @@
                 right: { style: "thin", color: { rgb: "CBD5E1" } }
             };
 
-            // Excel Style Definitions matching exact image UI
             const styleHeader1Left = {
                 fill: { fgColor: { rgb: "004B87" } },
                 font: { name: "Noto Sans Lao", bold: true, color: { rgb: "FFFFFF" }, sz: 11 },
@@ -798,121 +1062,76 @@
                 border: thinBorder
             };
 
-            function createStyledSheet(sheetType) {
-                const headerTitle2 = sheetType === 'unique'
-                    ? "ປະເພດເລກ "
-                    : "ປະເພດເລກ ";
+            const aoa = [
+                ["ນັບຈຳນວນເລກແຕ່ລະລະຫັດ", "", "ປະເພດເລກ (ນັບຕົວເລກບໍ່ຊ້ຳກັນ)", "", "", "", ""],
+                ["ລະຫັດຜູ້ຂາຍ", "ຈຳນວນບິນ", "ເລກ 2ໂຕ", "ເລກ 3ໂຕ", "ເລກ 4ໂຕ", "ເລກ 5ໂຕ", "ເລກ 6ໂຕ"]
+            ];
 
-                const aoa = [
-                    ["ນັບຈຳນວນເລກແຕ່ລະລະຫັດ", "", headerTitle2, "", "", "", ""],
-                    ["ລະຫັດຜູ້ຂາຍ", "ຈຳນວນບິນ", "ເລກ 2ໂຕ", "ເລກ 3ໂຕ", "ເລກ 4ໂຕ", "ເລກ 5ໂຕ", "ເລກ 6ໂຕ"]
-                ];
+            let totalBills = 0, sum2 = 0, sum3 = 0, sum4 = 0, sum5 = 0, sum6 = 0;
 
-                let totalBills = 0, sum2 = 0, sum3 = 0, sum4 = 0, sum5 = 0, sum6 = 0;
-
-                displayData.forEach(r => {
-                    const d2 = sheetType === 'unique' ? r.digit2 : r.digit2Total;
-                    const d3 = sheetType === 'unique' ? r.digit3 : r.digit3Total;
-                    const d4 = sheetType === 'unique' ? r.digit4 : r.digit4Total;
-                    const d5 = sheetType === 'unique' ? r.digit5 : r.digit5Total;
-                    const d6 = sheetType === 'unique' ? r.digit6 : r.digit6Total;
-
-                    totalBills += r.billCount;
-                    sum2 += d2;
-                    sum3 += d3;
-                    sum4 += d4;
-                    sum5 += d5;
-                    sum6 += d6;
-
-                    aoa.push([
-                        r.seller,
-                        r.billCount,
-                        d2 || "",
-                        d3 || "",
-                        d4 || "",
-                        d5 || "",
-                        d6 || ""
-                    ]);
-                });
+            displayData.forEach(r => {
+                totalBills += r.billCount;
+                sum2 += r.digit2;
+                sum3 += r.digit3;
+                sum4 += r.digit4;
+                sum5 += r.digit5;
+                sum6 += r.digit6;
 
                 aoa.push([
-                    `ລວມທັງໝົດ (${displayData.length} ລະຫັດ)`,
-                    totalBills,
-                    sum2,
-                    sum3,
-                    sum4,
-                    sum5,
-                    sum6
+                    r.seller,
+                    r.billCount,
+                    r.digit2 || "",
+                    r.digit3 || "",
+                    r.digit4 || "",
+                    r.digit5 || "",
+                    r.digit6 || ""
                 ]);
+            });
 
-                const ws = XLSX.utils.aoa_to_sheet(aoa);
+            aoa.push([
+                `ລວມທັງໝົດ (${displayData.length} ລະຫັດ)`,
+                totalBills,
+                sum2,
+                sum3,
+                sum4,
+                sum5,
+                sum6
+            ]);
 
-                ws['!merges'] = [
-                    { s: { r: 0, c: 0 }, e: { r: 0, c: 1 } },
-                    { s: { r: 0, c: 2 }, e: { r: 0, c: 6 } }
-                ];
+            const ws = XLSX.utils.aoa_to_sheet(aoa);
 
-                ws['!cols'] = [
-                    { wch: 22 },
-                    { wch: 16 },
-                    { wch: 14 },
-                    { wch: 14 },
-                    { wch: 14 },
-                    { wch: 14 },
-                    { wch: 14 }
-                ];
+            ws['!merges'] = [
+                { s: { r: 0, c: 0 }, e: { r: 0, c: 1 } },
+                { s: { r: 0, c: 2 }, e: { r: 0, c: 6 } }
+            ];
 
-                ws['!rows'] = [
-                    { hpt: 26 },
-                    { hpt: 26 }
-                ];
+            ws['!cols'] = [
+                { wch: 22 }, { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 }
+            ];
 
-                const range = XLSX.utils.decode_range(ws['!ref']);
+            ws['!rows'] = [{ hpt: 26 }, { hpt: 26 }];
 
-                for (let R = range.s.r; R <= range.e.r; ++R) {
-                    if (R >= 2 && R < range.e.r) {
-                        ws['!rows'][R] = { hpt: 22 };
-                    } else if (R === range.e.r) {
-                        ws['!rows'][R] = { hpt: 24 };
-                    }
+            const range = XLSX.utils.decode_range(ws['!ref']);
+            for (let R = range.s.r; R <= range.e.r; ++R) {
+                if (R >= 2 && R < range.e.r) ws['!rows'][R] = { hpt: 22 };
+                else if (R === range.e.r) ws['!rows'][R] = { hpt: 24 };
 
-                    for (let C = range.s.c; C <= range.e.c; ++C) {
-                        const cell_address = XLSX.utils.encode_cell({ r: R, c: C });
-                        if (!ws[cell_address]) {
-                            ws[cell_address] = { t: 's', v: '' };
-                        }
+                for (let C = range.s.c; C <= range.e.c; ++C) {
+                    const cell_address = XLSX.utils.encode_cell({ r: R, c: C });
+                    if (!ws[cell_address]) ws[cell_address] = { t: 's', v: '' };
 
-                        let cellStyle = {};
+                    let cellStyle = {};
+                    if (R === 0) cellStyle = (C <= 1) ? styleHeader1Left : styleHeader1Right;
+                    else if (R === 1) cellStyle = (C === 0) ? styleHeaderSeller : (C === 1) ? styleHeaderBills : styleHeaderDigits;
+                    else if (R === range.e.r) cellStyle = (C === 0) ? styleFooterLabel : (C === 1) ? styleFooterBills : styleFooterDigits;
+                    else cellStyle = (C === 0) ? styleCellSeller : (C === 1) ? styleCellBills : styleCellDigits;
 
-                        if (R === 0) {
-                            cellStyle = (C <= 1) ? styleHeader1Left : styleHeader1Right;
-                        } else if (R === 1) {
-                            if (C === 0) cellStyle = styleHeaderSeller;
-                            else if (C === 1) cellStyle = styleHeaderBills;
-                            else cellStyle = styleHeaderDigits;
-                        } else if (R === range.e.r) {
-                            if (C === 0) cellStyle = styleFooterLabel;
-                            else if (C === 1) cellStyle = styleFooterBills;
-                            else cellStyle = styleFooterDigits;
-                        } else {
-                            if (C === 0) cellStyle = styleCellSeller;
-                            else if (C === 1) cellStyle = styleCellBills;
-                            else cellStyle = styleCellDigits;
-                        }
-
-                        ws[cell_address].s = cellStyle;
-                    }
+                    ws[cell_address].s = cellStyle;
                 }
-
-                return ws;
             }
 
             const wb = XLSX.utils.book_new();
-
-            // Sheet 1: Unique Summary (ສົ່ງອອກພຽງ Sheet ດຽວ)
-            const ws1 = createStyledSheet('unique');
-            XLSX.utils.book_append_sheet(wb, ws1, "ສັງລວມເລກເກັງ (Unique)");
-
+            XLSX.utils.book_append_sheet(wb, ws, "ສັງລວມເລກເກັງ (Unique)");
             XLSX.writeFile(wb, `Lottery_Summary_${new Date().toISOString().slice(0, 10)}.xlsx`);
         }
     </script>
