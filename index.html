@@ -176,8 +176,8 @@
                     <span class="font-semibold text-slate-600">ຈັດລຽງ:</span>
                     <select id="modalSortSelect" onchange="filterModalDetails()"
                         class="bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500 font-medium text-slate-700">
-                        <option value="numAsc">ຕາມຕົວເລກ (00 → 99)</option>
                         <option value="amountDesc">ຍອດເງິນ (ຫຼາຍ → ໜ້ອຍ)</option>
+                        <option value="numAsc">ຕາມຕົວເລກ (00 → 99)</option>
                         <option value="countDesc">ຈຳນວນຄັ້ງຊື້ (ຫຼາຍ → ໜ້ອຍ)</option>
                     </select>
 
@@ -247,6 +247,7 @@
                     <p class="text-xs text-blue-200">ນັບຈຳນວນບິນ ແລະ ສັງລວມເລກ Unique ແຍກຕາມລະຫັດຜູ້ຂາຍ</p>
                 </div>
             </div>
+
         </div>
     </header>
 
@@ -374,12 +375,12 @@
                 <table id="excelSummaryTable" class="excel-table w-full text-sm border-collapse bg-white shadow-sm">
                     <thead>
                         <tr>
-                            <th colspan="2" class="excel-header-blue font-bold text-center border-b">
+                            <!-- <th colspan="2" class="excel-header-blue font-bold text-center border-b">
                                 ນັບຈຳນວນເລກແຕ່ລະລະຫັດ
                             </th>
                             <th colspan="5" class="excel-header-subblue font-bold text-center border-b">
                                 ປະເພດເລກ (ນັບຕົວເລກບໍ່ຊ້ຳກັນ)
-                            </th>
+                            </th> -->
                         </tr>
                         <tr class="text-xs uppercase font-bold">
                             <th class="excel-header-blue w-44 text-center">ລະຫັດຜູ້ຂາຍ</th>
@@ -834,17 +835,17 @@
                 tbody.appendChild(tr);
             });
 
-            tfoot.innerHTML = `
-                <tr>
-                    <td class="border text-center bg-blue-900 text-white">ລວມທັງໝົດ (${data.length} ລະຫັດ)</td>
-                    <td class="border text-center text-emerald-800 bg-emerald-100 font-bold">${sumBills.toLocaleString()}</td>
-                    <td class="border text-center font-bold">${sumD2.toLocaleString()}</td>
-                    <td class="border text-center font-bold">${sumD3.toLocaleString()}</td>
-                    <td class="border text-center font-bold">${sumD4.toLocaleString()}</td>
-                    <td class="border text-center font-bold">${sumD5.toLocaleString()}</td>
-                    <td class="border text-center font-bold">${sumD6.toLocaleString()}</td>
-                </tr>
-            `;
+            // tfoot.innerHTML = `
+            //     <tr>
+            //         <td class="border text-center bg-blue-900 text-white">ລວມທັງໝົດ (${data.length} ລະຫັດ)</td>
+            //         <td class="border text-center text-emerald-800 bg-emerald-100 font-bold">${sumBills.toLocaleString()}</td>
+            //         <td class="border text-center font-bold">${sumD2.toLocaleString()}</td>
+            //         <td class="border text-center font-bold">${sumD3.toLocaleString()}</td>
+            //         <td class="border text-center font-bold">${sumD4.toLocaleString()}</td>
+            //         <td class="border text-center font-bold">${sumD5.toLocaleString()}</td>
+            //         <td class="border text-center font-bold">${sumD6.toLocaleString()}</td>
+            //     </tr>
+            // `;
         }
 
         // Details Modal Functions
@@ -894,15 +895,17 @@
             const items = Object.values(numMap);
 
             const searchKey = document.getElementById('modalSearchInput').value.trim();
-            const sortKey = document.getElementById('modalSortSelect').value;
+
+            // ປ່ຽນ ບ່ອນນີ້: ຖ້າບໍ່ມີການເລືອກ ໃຫ້ ໃຊ້ 'amountDesc' ເປັນຄ່າເລີ່ມຕົ້ນ
+            const sortKey = document.getElementById('modalSortSelect').value || 'amountDesc';
 
             let filtered = items.filter(item => item.num.includes(searchKey));
 
             // Sorting
-            if (sortKey === 'numAsc') {
-                filtered.sort((a, b) => a.num.localeCompare(b.num));
-            } else if (sortKey === 'amountDesc') {
+            if (sortKey === 'amountDesc') {
                 filtered.sort((a, b) => b.amount - a.amount);
+            } else if (sortKey === 'numAsc') {
+                filtered.sort((a, b) => a.num.localeCompare(b.num));
             } else if (sortKey === 'countDesc') {
                 filtered.sort((a, b) => b.count - a.count);
             }
@@ -936,30 +939,30 @@
                 tr.className = idx % 2 === 0 ? 'bg-white hover:bg-blue-50/50' : 'bg-slate-50 hover:bg-blue-50/50';
 
                 tr.innerHTML = `
-                    <td class="py-2.5 px-4 text-center text-slate-400 text-xs font-mono">${idx + 1}</td>
-                    <td class="py-2.5 px-4 text-center font-mono font-bold text-lg text-blue-900">${item.num}</td>
-                    <td class="py-2.5 px-4 text-center font-semibold text-emerald-700">
-                        <span class="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-md border border-emerald-200">${item.count.toLocaleString()} ຄັ້ງ</span>
-                    </td>
-                    <td class="py-2.5 px-4 text-right font-bold text-purple-700">${item.amount.toLocaleString()} ₭</td>
-                `;
+            <td class="py-2.5 px-4 text-center text-slate-400 text-xs font-mono">${idx + 1}</td>
+            <td class="py-2.5 px-4 text-center font-mono font-bold text-lg text-blue-900">${item.num}</td>
+            <td class="py-2.5 px-4 text-center font-semibold text-emerald-700">
+                <span class="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-md border border-emerald-200">${item.count.toLocaleString()} ຄັ້ງ</span>
+            </td>
+            <td class="py-2.5 px-4 text-right font-bold text-purple-700">${item.amount.toLocaleString()} ₭</td>
+        `;
                 tbody.appendChild(tr);
 
                 // Render Grid View
                 const card = document.createElement('div');
                 card.className = 'bg-white border border-slate-200 rounded-xl p-3 shadow-sm hover:border-blue-400 transition flex flex-col justify-between space-y-2';
                 card.innerHTML = `
-                    <div class="flex items-center justify-between border-b border-slate-100 pb-1.5">
-                        <span class="text-xs text-slate-400 font-mono">#${idx + 1}</span>
-                        <span class="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">${item.count} ຄັ້ງ</span>
-                    </div>
-                    <div class="text-center py-1">
-                        <span class="text-2xl font-black font-mono tracking-wider text-blue-900">${item.num}</span>
-                    </div>
-                    <div class="text-center pt-1 border-t border-slate-100">
-                        <span class="text-xs font-bold text-purple-700">${item.amount.toLocaleString()} ₭</span>
-                    </div>
-                `;
+            <div class="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                <span class="text-xs text-slate-400 font-mono">#${idx + 1}</span>
+                <span class="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">${item.count} ຄັ້ງ</span>
+            </div>
+            <div class="text-center py-1">
+                <span class="text-2xl font-black font-mono tracking-wider text-blue-900">${item.num}</span>
+            </div>
+            <div class="text-center pt-1 border-t border-slate-100">
+                <span class="text-xs font-bold text-purple-700">${item.amount.toLocaleString()} ₭</span>
+            </div>
+        `;
                 gridView.appendChild(card);
             });
         }
@@ -988,20 +991,6 @@
                 right: { style: "thin", color: { rgb: "CBD5E1" } }
             };
 
-            const styleHeader1Left = {
-                fill: { fgColor: { rgb: "004B87" } },
-                font: { name: "Noto Sans Lao", bold: true, color: { rgb: "FFFFFF" }, sz: 11 },
-                alignment: { horizontal: "center", vertical: "center" },
-                border: thinBorder
-            };
-
-            const styleHeader1Right = {
-                fill: { fgColor: { rgb: "0B5CAB" } },
-                font: { name: "Noto Sans Lao", bold: true, color: { rgb: "FFFFFF" }, sz: 11 },
-                alignment: { horizontal: "center", vertical: "center" },
-                border: thinBorder
-            };
-
             const styleHeaderSeller = {
                 fill: { fgColor: { rgb: "004B87" } },
                 font: { name: "Noto Sans Lao", bold: true, color: { rgb: "FFFFFF" }, sz: 11 },
@@ -1010,15 +999,15 @@
             };
 
             const styleHeaderBills = {
-                fill: { fgColor: { rgb: "009944" } },
+                fill: { fgColor: { rgb: "004B87" } },
                 font: { name: "Noto Sans Lao", bold: true, color: { rgb: "FFFFFF" }, sz: 11 },
                 alignment: { horizontal: "center", vertical: "center" },
                 border: thinBorder
             };
 
             const styleHeaderDigits = {
-                fill: { fgColor: { rgb: "FDE9D9" } },
-                font: { name: "Noto Sans Lao", bold: true, color: { rgb: "000000" }, sz: 11 },
+                fill: { fgColor: { rgb: "004B87" } },
+                font: { name: "Noto Sans Lao", bold: true, color: { rgb: "FFFFFF" }, sz: 11 },
                 alignment: { horizontal: "center", vertical: "center" },
                 border: thinBorder
             };
@@ -1036,34 +1025,30 @@
             };
 
             const styleCellDigits = {
-                font: { name: "Noto Sans Lao", bold: false, color: { rgb: "000000" }, sz: 11 },
+                font: { name: "Noto Sans Lao", bold: false, color: { rgb: "FF0000" }, sz: 11 },
                 alignment: { horizontal: "center", vertical: "center" },
                 border: thinBorder
             };
 
             const styleFooterLabel = {
-                fill: { fgColor: { rgb: "004B87" } },
-                font: { name: "Noto Sans Lao", bold: true, color: { rgb: "FFFFFF" }, sz: 11 },
+                font: { name: "Noto Sans Lao", bold: true, color: { rgb: "004B87" }, sz: 11 },
                 alignment: { horizontal: "center", vertical: "center" },
                 border: thinBorder
             };
 
             const styleFooterBills = {
-                fill: { fgColor: { rgb: "D1FAE5" } },
                 font: { name: "Noto Sans Lao", bold: true, color: { rgb: "065F46" }, sz: 11 },
                 alignment: { horizontal: "center", vertical: "center" },
                 border: thinBorder
             };
 
             const styleFooterDigits = {
-                fill: { fgColor: { rgb: "F1F5F9" } },
                 font: { name: "Noto Sans Lao", bold: true, color: { rgb: "000000" }, sz: 11 },
                 alignment: { horizontal: "center", vertical: "center" },
                 border: thinBorder
             };
 
             const aoa = [
-                ["ນັບຈຳນວນເລກແຕ່ລະລະຫັດ", "", "ປະເພດເລກ (ນັບຕົວເລກບໍ່ຊ້ຳກັນ)", "", "", "", ""],
                 ["ລະຫັດຜູ້ຂາຍ", "ຈຳນວນບິນ", "ເລກ 2ໂຕ", "ເລກ 3ໂຕ", "ເລກ 4ໂຕ", "ເລກ 5ໂຕ", "ເລກ 6ໂຕ"]
             ];
 
@@ -1088,32 +1073,17 @@
                 ]);
             });
 
-            aoa.push([
-                `ລວມທັງໝົດ (${displayData.length} ລະຫັດ)`,
-                totalBills,
-                sum2,
-                sum3,
-                sum4,
-                sum5,
-                sum6
-            ]);
-
             const ws = XLSX.utils.aoa_to_sheet(aoa);
-
-            ws['!merges'] = [
-                { s: { r: 0, c: 0 }, e: { r: 0, c: 1 } },
-                { s: { r: 0, c: 2 }, e: { r: 0, c: 6 } }
-            ];
 
             ws['!cols'] = [
                 { wch: 22 }, { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 }
             ];
 
-            ws['!rows'] = [{ hpt: 26 }, { hpt: 26 }];
+            ws['!rows'] = [{ hpt: 26 }];
 
             const range = XLSX.utils.decode_range(ws['!ref']);
             for (let R = range.s.r; R <= range.e.r; ++R) {
-                if (R >= 2 && R < range.e.r) ws['!rows'][R] = { hpt: 22 };
+                if (R >= 1 && R < range.e.r) ws['!rows'][R] = { hpt: 22 };
                 else if (R === range.e.r) ws['!rows'][R] = { hpt: 24 };
 
                 for (let C = range.s.c; C <= range.e.c; ++C) {
@@ -1121,8 +1091,7 @@
                     if (!ws[cell_address]) ws[cell_address] = { t: 's', v: '' };
 
                     let cellStyle = {};
-                    if (R === 0) cellStyle = (C <= 1) ? styleHeader1Left : styleHeader1Right;
-                    else if (R === 1) cellStyle = (C === 0) ? styleHeaderSeller : (C === 1) ? styleHeaderBills : styleHeaderDigits;
+                    if (R === 0) cellStyle = (C === 0) ? styleHeaderSeller : (C === 1) ? styleHeaderBills : styleHeaderDigits;
                     else if (R === range.e.r) cellStyle = (C === 0) ? styleFooterLabel : (C === 1) ? styleFooterBills : styleFooterDigits;
                     else cellStyle = (C === 0) ? styleCellSeller : (C === 1) ? styleCellBills : styleCellDigits;
 
